@@ -10,12 +10,7 @@
 # use compose.host.sample.yaml.
 services:
   xboard:
-    build:
-      context: .
-      args:
-        REPO_URL: ${XBOARD_REPO_URL:-https://github.com/wind951017/Xboard}
-        BRANCH_NAME: ${XBOARD_BRANCH:-master}
-    image: ${XBOARD_IMAGE:-wind951017/xboard:distribution}
+    image: ${XBOARD_IMAGE:-ghcr.io/wind951017/xboard:latest}
     restart: unless-stopped
     ports:
       - "7001:7001"
@@ -29,6 +24,10 @@ services:
     environment:
       - RESOURCE_PROFILE=balanced      # minimal | balanced | performance | auto
       - ENABLE_HORIZON=true
+      - ENABLE_CADDY=false
+      - ENABLE_WEB=true
+      - ENABLE_REDIS=true
+      - ENABLE_WS_SERVER=true
       - docker=true
 
 volumes:
