@@ -52,6 +52,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \App\Models\Plan|null $plan 用户订阅计划
  * @property-read ServerGroup|null $group 权限组
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InviteCode> $codes 邀请码列表
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, User> $invited_users 邀请用户列表
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, CommissionLog> $commission_logs 佣金记录
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, CommissionWithdrawal> $commission_withdrawals 提现记录
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders 订单列表
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StatUser> $stat 统计信息
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Ticket> $tickets 工单列表
@@ -122,6 +125,21 @@ class User extends Authenticatable
     public function codes(): HasMany
     {
         return $this->hasMany(InviteCode::class, 'user_id', 'id');
+    }
+
+    public function invited_users(): HasMany
+    {
+        return $this->hasMany(self::class, 'invite_user_id', 'id');
+    }
+
+    public function commission_logs(): HasMany
+    {
+        return $this->hasMany(CommissionLog::class, 'invite_user_id', 'id');
+    }
+
+    public function commission_withdrawals(): HasMany
+    {
+        return $this->hasMany(CommissionWithdrawal::class, 'user_id', 'id');
     }
 
     public function orders(): HasMany

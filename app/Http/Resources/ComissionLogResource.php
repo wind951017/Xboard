@@ -16,10 +16,16 @@ class ComissionLogResource extends JsonResource
     {
         return [
             "id"=> $this['id'],
+            "user_id" => $this['user_id'],
+            "level" => $this['level'] ?? 1,
+            "commission_rate" => $this['commission_rate'],
+            "distribution_rate" => $this['distribution_rate'],
             "order_amount" => $this['order_amount'],
             "trade_no" => $this['trade_no'],
             "get_amount" => $this['get_amount'],
-            "created_at" => $this['created_at']
+            "status" => $this['status'] ?? 1,
+            "created_at" => $this['created_at'],
+            "user" => $this->whenLoaded('user'),
         ];
     }
 }

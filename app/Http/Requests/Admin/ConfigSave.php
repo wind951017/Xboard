@@ -15,6 +15,7 @@ class ConfigSave extends FormRequest
         'commission_first_time_enable' => '',
         'commission_auto_check_enable' => '',
         'commission_withdraw_limit' => 'nullable|numeric',
+        'commission_withdraw_fee_rate' => 'nullable|numeric|min:0|max:1',
         'commission_withdraw_method' => 'nullable|array',
         'withdraw_close_enable' => '',
         'commission_distribution_enable' => '',

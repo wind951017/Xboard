@@ -50,6 +50,8 @@ class UserRoute
             $router->get('/invite/save', [InviteController::class, 'save']);
             $router->get('/invite/fetch', [InviteController::class, 'fetch']);
             $router->get('/invite/details', [InviteController::class, 'details']);
+            $router->get('/invite/team', [InviteController::class, 'team']);
+            $router->get('/invite/withdrawals', [InviteController::class, 'withdrawals']);
             // Notice
             $router->get('/notice/fetch', [NoticeController::class, 'fetch']);
             // Ticket

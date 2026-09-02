@@ -50,7 +50,8 @@ class Order extends Model
         'created_at' => 'timestamp',
         'updated_at' => 'timestamp',
         'surplus_order_ids' => 'array',
-        'handling_amount' => 'integer'
+        'handling_amount' => 'integer',
+        'commission_rate' => 'float',
     ];
 
     const STATUS_PENDING = 0; // 待支付

@@ -2,6 +2,7 @@
 namespace App\Http\Routes\V2;
 
 use App\Http\Controllers\V2\Admin\ConfigController;
+use App\Http\Controllers\V2\Admin\CommissionWithdrawalController;
 use App\Http\Controllers\V2\Admin\MailTemplateController;
 use App\Http\Controllers\V2\Admin\PlanController;
 use App\Http\Controllers\V2\Admin\Server\GroupController;
@@ -172,6 +173,15 @@ class AdminRoute
                 $router->any('/fetch', [TicketController::class, 'fetch']);
                 $router->post('/reply', [TicketController::class, 'reply']);
                 $router->post('/close', [TicketController::class, 'close']);
+            });
+
+            // Commission withdrawal
+            $router->group([
+                'prefix' => 'commission-withdrawal'
+            ], function ($router) {
+                $router->any('/fetch', [CommissionWithdrawalController::class, 'fetch']);
+                $router->post('/approve', [CommissionWithdrawalController::class, 'approve']);
+                $router->post('/reject', [CommissionWithdrawalController::class, 'reject']);
             });
 
             // Coupon

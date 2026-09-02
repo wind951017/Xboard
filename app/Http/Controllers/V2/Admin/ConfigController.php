@@ -96,6 +96,7 @@ class ConfigController extends Controller
                 'commission_first_time_enable' => (bool) admin_setting('commission_first_time_enable', 1),
                 'commission_auto_check_enable' => (bool) admin_setting('commission_auto_check_enable', 1),
                 'commission_withdraw_limit' => admin_setting('commission_withdraw_limit', 100),
+                'commission_withdraw_fee_rate' => admin_setting('commission_withdraw_fee_rate', 0),
                 'commission_withdraw_method' => admin_setting('commission_withdraw_method', Dict::WITHDRAW_METHOD_WHITELIST_DEFAULT),
                 'withdraw_close_enable' => (bool) admin_setting('withdraw_close_enable', 0),
                 'commission_distribution_enable' => (bool) admin_setting('commission_distribution_enable', 0),

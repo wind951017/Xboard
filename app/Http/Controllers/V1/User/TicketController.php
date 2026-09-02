@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\V1\User;
 
+use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\TicketSave;
 use App\Http\Requests\User\TicketWithdraw;
 use App\Http\Resources\TicketResource;
+use App\Models\CommissionWithdrawal;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
@@ -13,7 +15,7 @@ use App\Services\TicketService;
 use App\Utils\Dict;
 use Illuminate\Http\Request;
 use App\Services\Plugin\HookManager;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class TicketController extends Controller
 {
@@ -116,8 +118,9 @@ class TicketController extends Controller
     public function withdraw(TicketWithdraw $request)
     {
         if ((int) admin_setting('withdraw_close_enable', 0)) {
-            return $this->fail([400, 'Unsupported withdraw']);
+            return $this->fail([400, __('Unsupported withdrawal')]);
         }
+
         if (
             !in_array(
                 $request->input('withdraw_method'),
@@ -126,28 +129,86 @@ class TicketController extends Controller
         ) {
             return $this->fail([422, __('Unsupported withdrawal method')]);
         }
-        $user = User::find($request->user()->id);
-        $limit = admin_setting('commission_withdraw_limit', 100);
-        if ($limit > ($user->commission_balance / 100)) {
-            return $this->fail([422, __('The current required minimum withdrawal commission is :limit', ['limit' => $limit])]);
-        }
+
         try {
-            $ticketService = new TicketService();
-            $subject = __('[Commission Withdrawal Request] This ticket is opened by the system');
-            $message = sprintf(
-                "%s\r\n%s",
-                __('Withdrawal method') . "：" . $request->input('withdraw_method'),
-                __('Withdrawal account') . "：" . $request->input('withdraw_account')
-            );
-            $ticket = $ticketService->createTicket(
-                $request->user()->id,
-                $subject,
-                2,
-                $message
-            );
+            $ticket = DB::transaction(function () use ($request) {
+                $user = User::whereKey($request->user()->id)->lockForUpdate()->first();
+                if (!$user) {
+                    throw new ApiException(__('The user does not exist'), 404);
+                }
+
+                if (Ticket::where('status', Ticket::STATUS_OPENING)->where('user_id', $user->id)->lockForUpdate()->first()) {
+                    throw new ApiException('存在未关闭的工单');
+                }
+
+                $amount = (int) ($request->input('withdraw_amount') ?: $request->input('amount') ?: $user->commission_balance);
+                $limit = (int) admin_setting('commission_withdraw_limit', 100) * 100;
+
+                if ($amount < $limit) {
+                    throw new ApiException(__('The current required minimum withdrawal commission is :limit', ['limit' => $limit / 100]), 422);
+                }
+
+                if ($amount > $user->commission_balance) {
+                    throw new ApiException(__('Insufficient commission balance'), 422);
+                }
+
+                $feeRate = (float) admin_setting('commission_withdraw_fee_rate', admin_setting('app_withdraw_fee_rate', 0));
+                $feeAmount = (int) floor($amount * $feeRate);
+                $actualAmount = max(0, $amount - $feeAmount);
+
+                $subject = __('[Commission Withdrawal Request] This ticket is opened by the system');
+                $message = sprintf(
+                    "%s\r\n%s\r\n%s\r\n%s",
+                    __('Withdrawal method') . "：" . $request->input('withdraw_method'),
+                    __('Withdrawal account') . "：" . $request->input('withdraw_account'),
+                    '提现金额：' . number_format($amount / 100, 2),
+                    '到账金额：' . number_format($actualAmount / 100, 2)
+                );
+
+                $ticket = Ticket::create([
+                    'user_id' => $user->id,
+                    'subject' => $subject,
+                    'level' => 2,
+                    'reply_status' => Ticket::REPLY_STATUS_WAITING,
+                    'last_reply_user_id' => $user->id,
+                ]);
+
+                if (!$ticket) {
+                    throw new ApiException('工单创建失败');
+                }
+
+                $ticketMessage = TicketMessage::create([
+                    'user_id' => $user->id,
+                    'ticket_id' => $ticket->id,
+                    'message' => $message,
+                ]);
+
+                if (!$ticketMessage) {
+                    throw new ApiException('工单消息创建失败');
+                }
+
+                $user->commission_balance -= $amount;
+                if ($user->commission_balance < 0 || !$user->save()) {
+                    throw new ApiException(__('Insufficient commission balance'), 422);
+                }
+
+                CommissionWithdrawal::create([
+                    'user_id' => $user->id,
+                    'ticket_id' => $ticket->id,
+                    'withdraw_method' => $request->input('withdraw_method'),
+                    'withdraw_account' => $request->input('withdraw_account'),
+                    'amount' => $amount,
+                    'fee_amount' => $feeAmount,
+                    'actual_amount' => $actualAmount,
+                    'status' => CommissionWithdrawal::STATUS_PENDING,
+                ]);
+
+                return $ticket;
+            });
         } catch (\Exception $e) {
             throw $e;
         }
+
         HookManager::call('ticket.create.after', $ticket);
         return $this->success(true);
     }
