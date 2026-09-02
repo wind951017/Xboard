@@ -104,6 +104,7 @@ class OrderService
             }
 
             $orderService->setInvite(user: $user);
+            $orderService->setAgent(user: $user);
 
             if (!$order->save()) {
                 throw new ApiException(__('Failed to create order'));
@@ -160,6 +161,8 @@ class OrderService
             if (!$order->save()) {
                 throw new \RuntimeException('订单信息保存失败');
             }
+
+            app(AgentService::class)->recordOrderCommission($order);
 
             return $order;
         });
@@ -222,16 +225,21 @@ class OrderService
     public function setInvite(User $user): void
     {
         $order = $this->order;
-        if ($user->invite_user_id && ($order->total_amount <= 0))
+        if (!$user->invite_user_id || $order->total_amount <= 0) {
             return;
+        }
+
         $order->invite_user_id = $user->invite_user_id;
         $inviter = User::find($user->invite_user_id);
-        if (!$inviter)
+        if (!$inviter) {
             return;
+        }
+
         $commissionType = (int) $inviter->commission_type;
         if ($commissionType === User::COMMISSION_TYPE_SYSTEM) {
             $commissionType = (bool) admin_setting('commission_first_time_enable', true) ? User::COMMISSION_TYPE_ONETIME : User::COMMISSION_TYPE_PERIOD;
         }
+
         $isCommission = false;
         switch ($commissionType) {
             case User::COMMISSION_TYPE_PERIOD:
@@ -242,13 +250,30 @@ class OrderService
                 break;
         }
 
-        if (!$isCommission)
+        if (!$isCommission) {
             return;
-        if ($inviter->commission_rate) {
-            $order->commission_balance = $order->total_amount * ($inviter->commission_rate / 100);
-        } else {
-            $order->commission_balance = $order->total_amount * (admin_setting('invite_commission', 10) / 100);
         }
+
+        $commissionRate = app(CommissionService::class)->resolveCommissionRate($inviter);
+        $order->commission_rate = $commissionRate;
+        $order->commission_balance = (int) floor($order->total_amount * ($commissionRate / 100));
+    }
+
+    public function setAgent(User $user): void
+    {
+        if (!$user->agent_id || $this->order->total_amount <= 0) {
+            return;
+        }
+
+        $agent = \App\Models\Agent::active()->find($user->agent_id);
+        if (!$agent) {
+            return;
+        }
+
+        $this->order->agent_id = $agent->id;
+        $this->order->agent_commission_rate = $agent->commission_rate;
+        $this->order->agent_commission_amount = (int) floor($this->order->total_amount * ($agent->commission_rate / 100));
+        $this->order->agent_settlement_status = \App\Models\AgentCommissionLog::STATUS_PENDING;
     }
 
     private function haveValidOrder(User $user): Order|null

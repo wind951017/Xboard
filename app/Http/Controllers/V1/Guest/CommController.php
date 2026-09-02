@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1\Guest;
 
 use App\Http\Controllers\Controller;
 use App\Services\Plugin\HookManager;
+use App\Services\AgentService;
 use App\Utils\Dict;
 use App\Utils\Helper;
 use Illuminate\Support\Facades\Http;
@@ -12,6 +13,7 @@ class CommController extends Controller
 {
     public function config()
     {
+        $agent = app(AgentService::class)->resolveFromRequest(request());
         $data = [
             'tos_url' => admin_setting('tos_url'),
             'is_email_verify' => (int) admin_setting('email_verify', 0) ? 1 : 0,
@@ -28,9 +30,15 @@ class CommController extends Controller
             'app_description' => admin_setting('app_description'),
             'app_url' => admin_setting('app_url'),
             'logo' => admin_setting('logo'),
+            'agent' => app(AgentService::class)->publicConfig($agent),
             // 保持向后兼容
             'is_recaptcha' => (int) admin_setting('captcha_enable', 0) ? 1 : 0,
         ];
+
+        if ($agent) {
+            $data['app_description'] = $agent->site_name ?: $agent->name;
+            $data['logo'] = $agent->logo ?: $data['logo'];
+        }
 
         $data = HookManager::filter('guest_comm_config', $data);
 

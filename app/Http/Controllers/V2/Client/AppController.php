@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V2\Client;
 
 use App\Http\Controllers\Controller;
 use App\Services\ServerService;
+use App\Services\AgentService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -13,13 +14,15 @@ class AppController extends Controller
 {
     public function getConfig(Request $request)
     {
+        $agent = app(AgentService::class)->resolveFromRequest($request);
         $config = [
             'app_info' => [
-                'app_name' => admin_setting('app_name', 'XB加速器'), // 应用名称
+                'app_name' => $agent?->site_name ?: admin_setting('app_name', 'XB加速器'), // 应用名称
                 'app_description' => admin_setting('app_description', '专业的网络加速服务'), // 应用描述
                 'app_url' => admin_setting('app_url', 'https://app.example.com'), // 应用官网 URL
-                'logo' => admin_setting('logo', 'https://example.com/logo.png'), // 应用 Logo URL
+                'logo' => $agent?->logo ?: admin_setting('logo', 'https://example.com/logo.png'), // 应用 Logo URL
                 'version' => admin_setting('app_version', '1.0.0'), // 应用版本号
+                'agent' => app(AgentService::class)->publicConfig($agent),
             ],
             'features' => [
                 'enable_register' => (bool) admin_setting('app_enable_register', true), // 是否开启注册功能

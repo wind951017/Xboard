@@ -35,10 +35,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $discount_amount
  * @property int|null $paid_at
  * @property string|null $callback_no
+ * @property int|null $agent_id
+ * @property float|null $agent_commission_rate
+ * @property int|null $agent_commission_amount
+ * @property int|null $agent_settlement_status
  *
  * @property-read Plan $plan
  * @property-read Payment|null $payment
  * @property-read User $user
+ * @property-read Agent|null $agent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, CommissionLog> $commission_log
  */
 class Order extends Model
@@ -52,6 +57,7 @@ class Order extends Model
         'surplus_order_ids' => 'array',
         'handling_amount' => 'integer',
         'commission_rate' => 'float',
+        'agent_commission_rate' => 'float',
     ];
 
     const STATUS_PENDING = 0; // 待支付
@@ -101,6 +107,11 @@ class Order extends Model
     public function invite_user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invite_user_id', 'id');
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'agent_id', 'id');
     }
 
     /**

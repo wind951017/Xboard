@@ -197,6 +197,7 @@ class UserService
             'invite_user_id',
             'telegram_id',
             'group_id',
+            'agent_id',
             'speed_limit',
             'expired_at',
             'transfer_enable'

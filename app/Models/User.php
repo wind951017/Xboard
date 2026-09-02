@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $discount 折扣
  * @property int|null $last_login_at 最后登录时间
  * @property int|null $parent_id 父账户ID
+ * @property int|null $agent_id 代理ID
  * @property int|null $is_admin 是否管理员
  * @property int|null $next_reset_at 下次流量重置时间
  * @property int|null $last_reset_at 上次流量重置时间
@@ -60,6 +61,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Ticket> $tickets 工单列表
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TrafficResetLog> $trafficResetLogs 流量重置记录
  * @property-read User|null $parent 父账户
+ * @property-read Agent|null $agent 代理
  * @property-read string $subscribe_url 订阅链接（动态生成）
  */
 class User extends Authenticatable
@@ -161,6 +163,11 @@ class User extends Authenticatable
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id', 'id');
+    }
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'agent_id', 'id');
     }
 
     /**

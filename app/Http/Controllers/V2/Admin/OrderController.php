@@ -236,6 +236,7 @@ class OrderController extends Controller
             }
 
             $orderService->setInvite($user);
+            $orderService->setAgent($user);
 
             if (!$order->save()) {
                 DB::rollBack();

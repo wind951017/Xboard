@@ -7,6 +7,7 @@ use App\Models\InviteCode;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\CaptchaService;
+use App\Services\AgentService;
 use App\Services\Plugin\HookManager;
 use App\Services\UserService;
 use App\Utils\CacheKey;
@@ -158,11 +159,13 @@ class RegisterService
         }
 
         // 创建用户
+        $agent = app(AgentService::class)->resolveFromRequest($request);
         $userService = app(UserService::class);
         $user = $userService->createUser([
             'email' => $email,
             'password' => $password,
             'invite_user_id' => $inviteUserId,
+            'agent_id' => $agent?->id,
         ]);
 
         // 保存用户
