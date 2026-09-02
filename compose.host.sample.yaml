@@ -1,6 +1,11 @@
 services:
   xboard:
-    image: ghcr.io/cedar2025/xboard:latest
+    build:
+      context: .
+      args:
+        REPO_URL: ${XBOARD_REPO_URL:-https://github.com/wind951017/Xboard}
+        BRANCH_NAME: ${XBOARD_BRANCH:-master}
+    image: ${XBOARD_IMAGE:-wind951017/xboard:distribution}
     restart: unless-stopped
     network_mode: host
     volumes:
